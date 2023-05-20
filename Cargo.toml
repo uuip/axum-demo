@@ -1,0 +1,31 @@
+[package]
+name = "web_api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axum = "0.6.18"
+tokio = { version = "1", features = ["full"] }
+hyper = { version = "0.14.26", features = ["full"] }
+tower = "0.4.13"
+tower-http = { version = "0.4", features = ["cors"] }
+
+sea-orm = { version = "0", features = ["sqlx-postgres", "runtime-tokio-native-tls", "macros"] }
+serde_json = "1.0.96"
+serde = { version = "1", features = ["derive"] }
+
+models={path="./models"}
+anyhow = "1.0.71"
+dotenvy = "0.15.7"
+recoil = "1.0.0"
+
+[workspace]
+members = [".","models"]
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"
+codegen-units = 1
