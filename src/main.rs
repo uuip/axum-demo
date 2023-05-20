@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_variables)]
+
 use axum::{
     routing::{get, post},
     Router,
@@ -5,11 +7,13 @@ use axum::{
 use sea_orm::Database;
 use tower_http::cors::CorsLayer;
 
-use api::{query_single_tree, query_some_tree, update_tree};
-use db::AppState;
+use crate::api::{query_single_tree, query_some_tree, update_tree};
+use crate::db::AppState;
 
-mod api;
-mod db;
+pub mod api;
+pub mod db;
+pub mod error;
+pub mod models;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
