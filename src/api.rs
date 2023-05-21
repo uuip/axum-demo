@@ -1,30 +1,26 @@
-use axum::extract::{Path, Query, State};
-use axum::http::StatusCode;
-use axum::response::Result;
-use axum::Json;
+use axum::{
+    body::Body,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::Result,
+    routing::{get, post},
+    Json, Router,
+};
 use sea_orm::prelude::*;
-use sea_orm::sea_query::Expr;
-use sea_orm::{QueryOrder, Set};
+use sea_orm::{sea_query::Expr, QueryOrder, Set};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use crate::db::AppState;
-use crate::error::{ApiError, Error};
+use crate::auth::Claims;
+use crate::common::*;
 use crate::models::prelude::*;
 
-#[derive(Deserialize)]
-pub struct Pagination {
-    page: Option<u64>,
-    size: Option<u64>,
-}
-
-impl Default for Pagination {
-    fn default() -> Self {
-        Self {
-            page: Some(1),
-            size: Some(10),
-        }
-    }
+pub fn tree_route() -> Router<AppState, Body> {
+    Router::new()
+        .route("/:id", get(query_single_tree))
+        .route("/q", get(query_some_tree))
+        .route("/update", post(update_tree))
+        .route("/testtoken", post(update_one))
 }
 
 pub async fn query_single_tree(
@@ -33,9 +29,17 @@ pub async fn query_single_tree(
 ) -> Result<Json<Value>, ApiError> {
     let obj = Trees::find_by_id(id)
         .one(&state.conn)
-        .await
-        .map_err(Error::DbError)?
-        .ok_or(Error::NotFound)?;
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    Ok(Json(json!(obj)))
+}
+pub async fn test_error(
+    state: State<AppState>,
+    Path(id): Path<i32>,
+) -> Result<Json<Value>, ApiError> {
+    let r: Result<String, DbErr> = Err(DbErr::Query(RuntimeErr::Internal("fff".to_string())));
+    // let r:Result<String,DbErr> = Err(DbErr::ConvertFromU64("fff"));
+    let obj = r.map_err(ApiError::DbError)?;
     Ok(Json(json!(obj)))
 }
 
@@ -46,25 +50,18 @@ pub struct SomeTrees {
 
 pub async fn query_some_tree(
     state: State<AppState>,
-    pagination: Option<Query<Pagination>>,
+    pagination: Pagination,
     params: Query<SomeTrees>,
 ) -> Result<Json<Value>, ApiError> {
-    let p = pagination.unwrap_or_default();
-    let mut page = p.page.unwrap_or(1);
-    if page < 1 {
-        page = 1
-    }
-    let page_size = p.size.unwrap_or(10);
+    let page = pagination.page;
+    let page_size = pagination.size.unwrap();
 
     let paginator = Trees::find()
         .filter(trees::Column::Energy.gte(params.energy))
         .order_by_asc(trees::Column::Id)
         .paginate(&state.conn, page_size);
     // let num_pages = paginator.num_pages().await?;
-    let objs = paginator
-        .fetch_page(page - 1)
-        .await
-        .map_err(Error::DbError)?;
+    let objs = paginator.fetch_page(page - 1).await?;
     Ok(Json(json!(objs)))
     // .map(|items| Json(json!(items)))
     // .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()));
@@ -81,17 +78,18 @@ pub struct Item {
 }
 
 pub async fn update_one(
-    state: State<AppState>,
-    payload: Json<Item>,
+    State(state): State<AppState>,
+    user: Claims,
+    Json(payload): Json<Item>,
 ) -> Result<Json<Value>, ApiError> {
+    println!("{}", user.id);
     let obj = Trees::find_by_id(payload.id)
         .one(&state.conn)
-        .await
-        .map_err(Error::DbError)?
-        .ok_or(Error::NotFound)?;
+        .await?
+        .ok_or(ApiError::NotFound)?;
     let mut obj: trees::ActiveModel = obj.into();
     obj.energy = Set(Option::from(payload.energy.to_owned()));
-    let obj = obj.update(&state.conn).await.map_err(Error::DbError)?;
+    let obj = obj.update(&state.conn).await?;
     Ok(Json(json!(obj)))
 }
 
