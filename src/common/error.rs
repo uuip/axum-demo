@@ -24,6 +24,8 @@ pub enum ApiError {
     InvalidToken,
     #[error(transparent)]
     JwtError(#[from] jsonwebtoken::errors::Error),
+    #[error(transparent)]
+    ValidationError(#[from] validator::ValidationErrors),
 }
 
 impl IntoResponse for ApiError {

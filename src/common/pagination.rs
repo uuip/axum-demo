@@ -36,7 +36,7 @@ where
         if value.size.is_none() {
             value.size = Some(10)
         }
-        value.validate().map_err(|_| ApiError::PageError)?;
+        value.validate()?;
         Ok(value)
     }
 }
