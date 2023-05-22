@@ -1,11 +1,12 @@
-use axum::{async_trait, extract::FromRequestParts, http::request::Parts};
-use derive_builder::Builder;
+use axum::async_trait;
+use axum::extract::FromRequestParts;
+use axum::http::request::Parts;
 use serde::Deserialize;
 use validator::Validate;
 
 use super::error::ApiError;
 
-#[derive(Debug, Clone, Copy, Validate, Builder, Deserialize)]
+#[derive(Debug, Clone, Copy, Validate, Deserialize)]
 pub struct Pagination {
     #[validate(range(min = 1))]
     pub page: u64,

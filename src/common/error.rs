@@ -1,11 +1,12 @@
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
-};
+//! define error, and convert other Error type to ApiError without `imp From`
+
+use axum::http::StatusCode;
+use axum::Json;
+use axum::response::{IntoResponse, Response};
 use serde_json::json;
 use thiserror::Error;
 
+/// # ApiError
 #[derive(Debug, Error)]
 pub enum ApiError {
     #[error(transparent)]
@@ -42,15 +43,4 @@ impl IntoResponse for ApiError {
     }
 }
 
-// pub type ApiError = (StatusCode, Json<Value>);
-//
-// impl From<Error> for ApiError {
-//     fn from(err: Error) -> Self {
-//         let status = match err {
-//             Error::NotFound => StatusCode::NOT_FOUND,
-//             _ => StatusCode::INTERNAL_SERVER_ERROR,
-//         };
-//         let payload = json!({"message": err.to_string()});
-//         (status, Json(payload))
-//     }
-// }
+// impl From<Error> for ApiError

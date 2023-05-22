@@ -1,6 +1,7 @@
 #![allow(dead_code, unused_variables)]
 
-use axum::{routing::post, Router};
+use axum::Router;
+use axum::routing::post;
 use tower_http::cors::CorsLayer;
 
 use crate::api::tree_route;

@@ -1,10 +1,8 @@
-use axum::{
-    async_trait,
-    extract::FromRequestParts,
-    headers::{authorization::Bearer, Authorization},
-    http::request::Parts,
-    RequestPartsExt, TypedHeader,
-};
+use axum::{async_trait, RequestPartsExt, TypedHeader};
+use axum::extract::FromRequestParts;
+use axum::headers::Authorization;
+use axum::headers::authorization::Bearer;
+use axum::http::request::Parts;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
@@ -39,6 +37,7 @@ where
     S: Send + Sync,
 {
     type Rejection = ApiError;
+
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()

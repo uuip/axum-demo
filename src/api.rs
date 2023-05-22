@@ -1,13 +1,12 @@
-use axum::{
-    body::Body,
-    extract::{Path, Query, State},
-    http::StatusCode,
-    response::Result,
-    routing::{get, post},
-    Json, Router,
-};
+use axum::{Json, Router};
+use axum::body::Body;
+use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
+use axum::response::Result;
+use axum::routing::{get, post};
+use sea_orm::{QueryOrder, Set};
 use sea_orm::prelude::*;
-use sea_orm::{sea_query::Expr, QueryOrder, Set};
+use sea_orm::sea_query::Expr;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -33,6 +32,7 @@ pub async fn query_single_tree(
         .ok_or(ApiError::NotFound)?;
     Ok(Json(json!(obj)))
 }
+
 pub async fn test_error(
     state: State<AppState>,
     Path(id): Path<i32>,
