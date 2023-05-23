@@ -10,7 +10,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum ApiError {
     #[error(transparent)]
-    DbError(#[from] sea_orm::DbErr),
+    SQLError(#[from] sqlx::Error),
     #[error("not found")]
     NotFound,
     #[error("page params error")]

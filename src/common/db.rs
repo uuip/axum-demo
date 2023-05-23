@@ -1,15 +1,17 @@
-use sea_orm::{ConnectOptions, Database, DatabaseConnection};
+use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub conn: DatabaseConnection,
+    pub conn: PgPool,
 }
 
-pub async fn connection() -> AppState {
+pub async fn connection() -> PgPool {
     let dsn = dotenvy::var("DATABASE_URL").unwrap();
-    let mut opt = ConnectOptions::new(dsn.to_string());
-    opt.max_connections(1000);
-    // let conn = Database::connect(dsn).await.unwrap();
-    let conn = Database::connect(opt).await.unwrap();
-    AppState { conn }
+    PgPoolOptions::new()
+        .max_connections(3000)
+        .min_connections(64)
+        .connect(&dsn)
+        .await
+        .unwrap()
 }

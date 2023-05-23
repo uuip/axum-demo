@@ -9,9 +9,9 @@ use super::error::ApiError;
 #[derive(Debug, Clone, Copy, Validate, Deserialize)]
 pub struct Pagination {
     #[validate(range(min = 1))]
-    pub page: u64,
+    pub page: i64,
     #[validate(range(min = 1))]
-    pub size: Option<u64>,
+    pub size: Option<i64>,
 }
 
 impl Default for Pagination {

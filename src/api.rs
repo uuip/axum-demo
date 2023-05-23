@@ -1,45 +1,41 @@
 use axum::{Json, Router};
 use axum::body::Body;
 use axum::extract::{Path, Query, State};
-use axum::http::StatusCode;
 use axum::response::Result;
 use axum::routing::{get, post};
-use sea_orm::{QueryOrder, Set};
-use sea_orm::prelude::*;
-use sea_orm::sea_query::Expr;
+use rand::Rng;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use sqlx::{PgPool, Postgres};
 
 use crate::auth::Claims;
 use crate::common::*;
-use crate::models::prelude::*;
+use crate::models::Trees;
 
-pub fn tree_route() -> Router<AppState, Body> {
+pub fn tree_route() -> Router<PgPool, Body> {
     Router::new()
         .route("/:id", get(query_single_tree))
         .route("/q", get(query_some_tree))
         .route("/update", post(update_tree))
-        .route("/testtoken", post(update_one))
+}
+
+pub async fn test_token(
+    State(pool): State<PgPool>,
+    user: Claims,
+    Json(payload): Json<Item>,
+) -> Result<Json<Value>, ApiError> {
+    let user_id = user.id;
+    Ok(Json(json!({ "user": user_id })))
 }
 
 pub async fn query_single_tree(
-    state: State<AppState>,
+    State(pool): State<PgPool>,
     Path(id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
-    let obj = Trees::find_by_id(id)
-        .one(&state.conn)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-    Ok(Json(json!(obj)))
-}
-
-pub async fn test_error(
-    state: State<AppState>,
-    Path(id): Path<i32>,
-) -> Result<Json<Value>, ApiError> {
-    let r: Result<String, DbErr> = Err(DbErr::Query(RuntimeErr::Internal("fff".to_string())));
-    // let r:Result<String,DbErr> = Err(DbErr::ConvertFromU64("fff"));
-    let obj = r.map_err(ApiError::DbError)?;
+    let obj = sqlx::query_as::<Postgres, Trees>("select * from trees where id=$1")
+        .bind(id)
+        .fetch_one(&pool)
+        .await?;
     Ok(Json(json!(obj)))
 }
 
@@ -49,26 +45,24 @@ pub struct SomeTrees {
 }
 
 pub async fn query_some_tree(
-    state: State<AppState>,
+    State(pool): State<PgPool>,
     pagination: Pagination,
     params: Query<SomeTrees>,
 ) -> Result<Json<Value>, ApiError> {
     let page = pagination.page;
     let page_size = pagination.size.unwrap();
+    let offset = (page - 1) * page_size;
 
-    let paginator = Trees::find()
-        .filter(trees::Column::Energy.gte(params.energy))
-        .order_by_asc(trees::Column::Id)
-        .paginate(&state.conn, page_size);
-    // let num_pages = paginator.num_pages().await?;
-    let objs = paginator.fetch_page(page - 1).await?;
+    let objs = sqlx::query_as!(
+        Trees,
+        "select * from trees where energy>=$1 order by id desc limit $2 offset $3",
+        params.energy,
+        page_size,
+        offset
+    )
+    .fetch_all(&pool)
+    .await?;
     Ok(Json(json!(objs)))
-    // .map(|items| Json(json!(items)))
-    // .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()));
-    // match objs {
-    //     Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
-    //     Ok(objs) => Ok(Json(json!(objs))),
-    // }
 }
 
 #[derive(Deserialize)]
@@ -77,27 +71,16 @@ pub struct Item {
     energy: i32,
 }
 
-pub async fn update_one(
-    State(state): State<AppState>,
-    user: Claims,
-    Json(payload): Json<Item>,
+pub async fn update_tree(
+    State(pool): State<PgPool>,
+    payload: Json<Item>,
 ) -> Result<Json<Value>, ApiError> {
-    println!("{}", user.id);
-    let obj = Trees::find_by_id(payload.id)
-        .one(&state.conn)
+    let id: i32 = rand::thread_rng().gen_range(1..=9999999);
+    let rst = sqlx::query("UPDATE trees SET energy=$1 WHERE id=$2")
+        .bind(payload.energy)
+        .bind(id)
+        .execute(&pool)
         .await?
-        .ok_or(ApiError::NotFound)?;
-    let mut obj: trees::ActiveModel = obj.into();
-    obj.energy = Set(Option::from(payload.energy.to_owned()));
-    let obj = obj.update(&state.conn).await?;
-    Ok(Json(json!(obj)))
-}
-
-pub async fn update_tree(state: State<AppState>, payload: Json<Item>) -> StatusCode {
-    let _ = Trees::update_many()
-        .col_expr(trees::Column::Energy, Expr::value(payload.energy))
-        .filter(trees::Column::Id.eq(payload.id))
-        .exec(&state.conn)
-        .await;
-    StatusCode::OK
+        .rows_affected();
+    Ok(Json(json!({"id":id, "rows_affected": rst })))
 }
