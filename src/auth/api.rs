@@ -2,8 +2,9 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use super::jwt;
 use crate::common::ApiError;
+
+use super::jwt;
 
 #[derive(Deserialize)]
 pub struct LoginInput {

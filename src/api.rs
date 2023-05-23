@@ -1,9 +1,8 @@
-use axum::{Json, Router};
 use axum::body::Body;
 use axum::extract::{Path, Query, State};
 use axum::response::Result;
 use axum::routing::{get, post};
-use rand::Rng;
+use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::{PgPool, Postgres};
@@ -75,12 +74,12 @@ pub async fn update_tree(
     State(pool): State<PgPool>,
     payload: Json<Item>,
 ) -> Result<Json<Value>, ApiError> {
-    let id: i32 = rand::thread_rng().gen_range(1..=9999999);
+    // let id: i32 = rand::thread_rng().gen_range(1..=9999999);
     let rst = sqlx::query("UPDATE trees SET energy=$1 WHERE id=$2")
         .bind(payload.energy)
-        .bind(id)
+        .bind(payload.id)
         .execute(&pool)
         .await?
         .rows_affected();
-    Ok(Json(json!({"id":id, "rows_affected": rst })))
+    Ok(Json(json!({"id":payload.id, "rows_affected": rst })))
 }

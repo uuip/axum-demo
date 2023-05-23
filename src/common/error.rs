@@ -1,8 +1,8 @@
 //! define error, and convert other Error type to ApiError without `imp From`
 
 use axum::http::StatusCode;
-use axum::Json;
 use axum::response::{IntoResponse, Response};
+use axum::Json;
 use serde_json::json;
 use thiserror::Error;
 

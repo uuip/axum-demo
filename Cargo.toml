@@ -22,7 +22,6 @@ dotenvy = "0.15.7"
 anyhow = "1.0.71"
 thiserror = "1.0.40"
 chrono = { version = "0.4.24", features = ["serde"] }
-rand = "0.8.5"
 
 [profile.release]
 lto = true
