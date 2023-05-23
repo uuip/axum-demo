@@ -1,4 +1,4 @@
-pub use self::db::{AppState, connection};
+pub use self::db::{connection, AppState};
 pub use self::error::ApiError;
 pub use self::pagination::Pagination;
 
