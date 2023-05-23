@@ -33,16 +33,6 @@ pub async fn query_single_tree(
     Ok(Json(json!(obj)))
 }
 
-pub async fn test_error(
-    state: State<AppState>,
-    Path(id): Path<i32>,
-) -> Result<Json<Value>, ApiError> {
-    let r: Result<String, DbErr> = Err(DbErr::Query(RuntimeErr::Internal("fff".to_string())));
-    // let r:Result<String,DbErr> = Err(DbErr::ConvertFromU64("fff"));
-    let obj = r.map_err(ApiError::DbError)?;
-    Ok(Json(json!(obj)))
-}
-
 #[derive(Deserialize)]
 pub struct SomeTrees {
     energy: i32,
