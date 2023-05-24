@@ -1,5 +1,5 @@
-use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -9,7 +9,7 @@ pub struct AppState {
 pub async fn connection() -> PgPool {
     let dsn = dotenvy::var("DATABASE_URL").unwrap();
     PgPoolOptions::new()
-        .max_connections(3000)
+        .max_connections(800)
         .min_connections(64)
         .connect(&dsn)
         .await
