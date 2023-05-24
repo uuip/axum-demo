@@ -3,15 +3,16 @@ use axum::extract::{Path, Query, State};
 use axum::response::Result;
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use deadpool_postgres::Pool;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use sqlx::{PgPool, Postgres};
+use tokio_pg_mapper::FromTokioPostgresRow;
 
 use crate::auth::Claims;
 use crate::common::*;
 use crate::models::Trees;
 
-pub fn tree_route() -> Router<PgPool, Body> {
+pub fn tree_route() -> Router<Pool, Body> {
     Router::new()
         .route("/:id", get(query_single_tree))
         .route("/q", get(query_some_tree))
@@ -19,7 +20,7 @@ pub fn tree_route() -> Router<PgPool, Body> {
 }
 
 pub async fn test_token(
-    State(pool): State<PgPool>,
+    State(pool): State<Pool>,
     user: Claims,
     Json(payload): Json<Item>,
 ) -> Result<Json<Value>, ApiError> {
@@ -28,13 +29,15 @@ pub async fn test_token(
 }
 
 pub async fn query_single_tree(
-    State(pool): State<PgPool>,
+    State(pool): State<Pool>,
     Path(id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
-    let obj = sqlx::query_as::<Postgres, Trees>("select * from trees where id=$1")
-        .bind(id)
-        .fetch_one(&pool)
-        .await?;
+    let client = pool.get().await.unwrap();
+    let row = client
+        .query_one("select * from trees where id=$1", &[&id])
+        .await
+        .unwrap();
+    let obj = Trees::from_row(row)?;
     Ok(Json(json!(obj)))
 }
 
@@ -44,23 +47,24 @@ pub struct SomeTrees {
 }
 
 pub async fn query_some_tree(
-    State(pool): State<PgPool>,
+    State(pool): State<Pool>,
     pagination: Pagination,
     params: Query<SomeTrees>,
 ) -> Result<Json<Value>, ApiError> {
     let page = pagination.page;
     let page_size = pagination.size.unwrap();
     let offset = (page - 1) * page_size;
+    let client = pool.get().await.unwrap();
 
-    let objs = sqlx::query_as!(
-        Trees,
-        "select * from trees where energy>=$1 order by id desc limit $2 offset $3",
-        params.energy,
-        page_size,
-        offset
-    )
-    .fetch_all(&pool)
-    .await?;
+    let objs = client
+        .query(
+            "select * from trees where energy>=$1 order by id desc limit $2 offset $3",
+            &[&params.energy, &page_size, &offset],
+        )
+        .await?
+        .into_iter()
+        .map(|item| Trees::from_row(item).unwrap())
+        .collect::<Vec<Trees>>();
     Ok(Json(json!(objs)))
 }
 
@@ -71,15 +75,15 @@ pub struct Item {
 }
 
 pub async fn update_tree(
-    State(pool): State<PgPool>,
+    State(pool): State<Pool>,
     payload: Json<Item>,
 ) -> Result<Json<Value>, ApiError> {
-    // let id: i32 = rand::thread_rng().gen_range(1..=9999999);
-    let rst = sqlx::query("UPDATE trees SET energy=$1 WHERE id=$2")
-        .bind(payload.energy)
-        .bind(payload.id)
-        .execute(&pool)
-        .await?
-        .rows_affected();
+    let client = pool.get().await.unwrap();
+    let rst = client
+        .execute(
+            "UPDATE trees SET energy=$1 WHERE id=$2",
+            &[&payload.energy, &payload.id],
+        )
+        .await?;
     Ok(Json(json!({"id":payload.id, "rows_affected": rst })))
 }

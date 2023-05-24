@@ -10,7 +10,9 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum ApiError {
     #[error(transparent)]
-    SQLError(#[from] sqlx::Error),
+    SQLError(#[from] tokio_postgres::Error),
+    #[error(transparent)]
+    MapperError(#[from] tokio_pg_mapper::Error),
     #[error("not found")]
     NotFound,
     #[error("page params error")]
