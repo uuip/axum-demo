@@ -8,8 +8,7 @@ pub struct AppState {
 pub async fn connection() -> AppState {
     let dsn = dotenvy::var("DATABASE_URL").unwrap();
     let mut opt = ConnectOptions::new(dsn.to_string());
-    opt.max_connections(800).min_connections(64);
-    // let conn = Database::connect(dsn).await.unwrap();
+    opt.max_connections(3000).min_connections(64);
     let conn = Database::connect(opt).await.unwrap();
     AppState { conn }
 }
