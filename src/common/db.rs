@@ -15,5 +15,7 @@ pub async fn connection() -> Pool {
     cfg.dbname = dsn.path_segments().unwrap().next().map(|x| x.to_string());
     cfg.user = Some(dsn.username().to_string());
     cfg.password = dsn.password().map(|x| x.to_string());
-    cfg.create_pool(Some(Runtime::Tokio1), NoTls).unwrap()
+    let pool = cfg.create_pool(Some(Runtime::Tokio1), NoTls).unwrap();
+    pool.resize(3000);
+    pool
 }
