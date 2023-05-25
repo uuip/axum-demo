@@ -32,11 +32,10 @@ pub async fn query_single_tree(
     State(pool): State<Pool>,
     Path(id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
-    let client = pool.get().await.unwrap();
+    let client = pool.get().await?;
     let row = client
         .query_one("select * from trees where id=$1", &[&id])
-        .await
-        .unwrap();
+        .await?;
     let obj = Trees::from_row(row)?;
     Ok(Json(json!(obj)))
 }
@@ -54,7 +53,7 @@ pub async fn query_some_tree(
     let page = pagination.page;
     let page_size = pagination.size.unwrap();
     let offset = (page - 1) * page_size;
-    let client = pool.get().await.unwrap();
+    let client = pool.get().await?;
 
     let objs = client
         .query(
@@ -78,7 +77,7 @@ pub async fn update_tree(
     State(pool): State<Pool>,
     payload: Json<Item>,
 ) -> Result<Json<Value>, ApiError> {
-    let client = pool.get().await.unwrap();
+    let client = pool.get().await?;
     let rst = client
         .execute(
             "UPDATE trees SET energy=$1 WHERE id=$2",

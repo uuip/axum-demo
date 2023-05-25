@@ -13,6 +13,8 @@ pub enum ApiError {
     SQLError(#[from] tokio_postgres::Error),
     #[error(transparent)]
     MapperError(#[from] tokio_pg_mapper::Error),
+    #[error(transparent)]
+    PoolError(#[from] deadpool_postgres::PoolError),
     #[error("not found")]
     NotFound,
     #[error("page params error")]
