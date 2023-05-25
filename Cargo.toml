@@ -14,8 +14,9 @@ validator = { version = "0.16.0", features = ["derive"] }
 
 tokio-postgres = { version = "0.7.8", features=["with-serde_json-1","with-chrono-0_4"]}
 deadpool-postgres = "0.10.5"
-tokio-pg-mapper = { version = "0.2.0", features=["derive"]}
-#postgres-from-row = "0.5.1"
+postgres-from-row = "0.5.1"
+#tokio-postgres-extractor = "0.7.0"
+#tokio-pg-mapper = { version = "0.2.0", features=["derive"]}
 
 serde_json = "1.0.96"
 serde = { version = "1", features = ["derive"] }

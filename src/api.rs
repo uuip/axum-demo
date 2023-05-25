@@ -4,9 +4,9 @@ use axum::response::Result;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use deadpool_postgres::Pool;
+use postgres_from_row::FromRow;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use tokio_pg_mapper::FromTokioPostgresRow;
 
 use crate::auth::Claims;
 use crate::common::*;
@@ -36,7 +36,7 @@ pub async fn query_single_tree(
     let row = client
         .query_one("select * from trees where id=$1", &[&id])
         .await?;
-    let obj = Trees::from_row(row)?;
+    let obj = Trees::from_row(&row);
     Ok(Json(json!(obj)))
 }
 
@@ -61,8 +61,8 @@ pub async fn query_some_tree(
             &[&params.energy, &page_size, &offset],
         )
         .await?
-        .into_iter()
-        .map(|item| Trees::from_row(item).unwrap())
+        .iter()
+        .map(Trees::from_row)
         .collect::<Vec<Trees>>();
     Ok(Json(json!(objs)))
 }

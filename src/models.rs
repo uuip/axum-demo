@@ -1,11 +1,9 @@
-use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
-use tokio_pg_mapper::tokio_pg_mapper_derive::PostgresMapper;
-
 use crate::common::datetime_serializer::serialize;
+use chrono::NaiveDateTime;
+use postgres_from_row::FromRow;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Serialize, PostgresMapper)]
-#[pg_mapper(table = "trees")]
+#[derive(Clone, Debug, Deserialize, Serialize, FromRow)]
 pub struct Trees {
     pub id: i32,
     pub user_id: Option<i32>,
@@ -18,8 +16,7 @@ pub struct Trees {
     pub update_at: Option<NaiveDateTime>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PostgresMapper)]
-#[pg_mapper(table = "users")]
+#[derive(Clone, Debug, Deserialize, Serialize, FromRow)]
 pub struct User {
     pub id: i32,
     pub name: Option<String>,
