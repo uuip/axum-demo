@@ -16,9 +16,9 @@ pub struct Model {
     pub desc: Option<String>,
     pub energy: Option<i32>,
     #[serde(serialize_with = "serialize")]
-    pub create_at: Option<DateTime>,
+    pub created_at: Option<DateTimeLocal>,
     #[serde(serialize_with = "serialize")]
-    pub update_at: Option<DateTime>,
+    pub updated_at: Option<DateTimeLocal>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

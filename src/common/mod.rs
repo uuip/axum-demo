@@ -7,11 +7,11 @@ mod error;
 mod pagination;
 
 pub mod datetime_serializer {
-    use chrono::NaiveDateTime;
+    use sea_orm::prelude::DateTimeLocal;
     use serde::Serializer;
 
     const FORMAT: &str = "%Y-%m-%d %H:%M:%S";
-    pub fn serialize<S>(date: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(date: &Option<DateTimeLocal>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
