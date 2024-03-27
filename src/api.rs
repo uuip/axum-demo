@@ -1,39 +1,42 @@
 use axum::extract::{Path, Query, State};
-use axum::http::StatusCode;
-use axum::Json;
-use axum::response::{ErrorResponse, IntoResponse, Result};
-use sea_orm::{QueryOrder, Set};
-use sea_orm::prelude::*;
-use sea_orm::sea_query::Expr;
+use axum::response::Result;
+use axum::routing::{get, post};
+use axum::{Json, Router};
+use deadpool_postgres::Pool;
+use postgres_from_row::FromRow;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use models::prelude::*;
+use crate::auth::Claims;
+use crate::common::*;
+use crate::models::Trees;
 
-use crate::AppState;
-
-#[derive(Deserialize)]
-pub struct Pagination {
-    page: Option<u64>,
-    size: Option<u64>,
+pub fn tree_route() -> Router<Pool> {
+    Router::new()
+        .route("/:id", get(query_single_tree))
+        .route("/q", get(query_some_tree))
+        .route("/update", post(update_tree))
 }
 
-impl Default for Pagination {
-    fn default() -> Self {
-        Self {
-            page: Some(1),
-            size: Some(10),
-        }
-    }
+pub async fn test_token(
+    State(pool): State<Pool>,
+    user: Claims,
+    Json(payload): Json<Item>,
+) -> Result<Json<Value>, ApiError> {
+    let user_id = user.id;
+    Ok(Json(json!({ "user": user_id })))
 }
 
-pub async fn query_single_tree(state: State<AppState>, Path(id): Path<i32>) -> Json<Value> {
-    let obj = Trees::find_by_id(id).one(&state.conn).await.unwrap();
-    if let Some(obj) = obj {
-        Json(json!(obj))
-    } else {
-        Json(json!({"status":"find nothing"}))
-    }
+pub async fn query_single_tree(
+    State(pool): State<Pool>,
+    Path(id): Path<i32>,
+) -> Result<Json<Value>, ApiError> {
+    let client = pool.get().await?;
+    let row = client
+        .query_one("select * from trees where id=$1", &[&id])
+        .await?;
+    let obj = Trees::from_row(&row);
+    Ok(Json(json!(obj)))
 }
 
 #[derive(Deserialize)]
@@ -42,27 +45,25 @@ pub struct SomeTrees {
 }
 
 pub async fn query_some_tree(
-    state: State<AppState>,
-    pagination: Option<Query<Pagination>>,
+    State(pool): State<Pool>,
+    pagination: Pagination,
     params: Query<SomeTrees>,
-) -> Result<Json<Value>> {
-    let p = pagination.unwrap_or_default();
-    let mut page = p.page.unwrap_or(1);
-    if page < 1 {
-        page = 1
-    }
-    let page_size = p.size.unwrap_or(10);
+) -> Result<Json<Value>, ApiError> {
+    let page = pagination.page;
+    let page_size = pagination.size.unwrap();
+    let offset = (page - 1) * page_size;
+    let client = pool.get().await?;
 
-    let paginator = Trees::find()
-        .filter(trees::Column::Energy.gte(params.energy))
-        .order_by_asc(trees::Column::Id)
-        .paginate(&state.conn, page_size);
-    // let num_pages = paginator.num_pages().await?;
-    let objs = paginator.fetch_page(page - 1).await;
-    match objs {
-        Err(e) => Err(ErrorResponse::from(e.to_string())),
-        Ok(objs) => Ok(Json(json!(objs))),
-    }
+    let objs = client
+        .query(
+            "select * from trees where energy>=$1 order by id desc limit $2 offset $3",
+            &[&params.energy, &page_size, &offset],
+        )
+        .await?
+        .iter()
+        .map(Trees::from_row)
+        .collect::<Vec<Trees>>();
+    Ok(Json(json!(objs)))
 }
 
 #[derive(Deserialize)]
@@ -71,23 +72,16 @@ pub struct Item {
     energy: i32,
 }
 
-pub async fn update_tree_obj(state: State<AppState>, payload: Json<Item>) -> impl IntoResponse {
-    let obj = Trees::find_by_id(payload.id)
-        .one(&state.conn)
-        .await
-        .expect("can't find this id")
-        .unwrap();
-    let mut obj: trees::ActiveModel = obj.into();
-    obj.energy = Set(Option::from(payload.energy.to_owned()));
-    obj.update(&state.conn).await.expect("update failed");
-    StatusCode::OK
-}
-
-pub async fn update_tree(state: State<AppState>, payload: Json<Item>) -> StatusCode {
-    let _ = Trees::update_many()
-        .col_expr(trees::Column::Energy, Expr::value(payload.energy))
-        .filter(trees::Column::Id.eq(payload.id))
-        .exec(&state.conn)
-        .await;
-    StatusCode::OK
+pub async fn update_tree(
+    State(pool): State<Pool>,
+    payload: Json<Item>,
+) -> Result<Json<Value>, ApiError> {
+    let client = pool.get().await?;
+    let rst = client
+        .execute(
+            "UPDATE trees SET energy=$1 WHERE id=$2",
+            &[&payload.energy, &payload.id],
+        )
+        .await?;
+    Ok(Json(json!({"id":payload.id, "rows_affected": rst })))
 }
