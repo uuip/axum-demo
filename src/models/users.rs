@@ -15,8 +15,8 @@ pub struct Model {
     pub phone: Option<String>,
     pub energy: Option<i32>,
     pub available_energy: Option<i32>,
-    pub create_at: Option<DateTime>,
-    pub update_at: Option<DateTime>,
+    pub created_at: Option<DateTimeLocal>,
+    pub updated_at: Option<DateTimeLocal>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
