@@ -2,11 +2,6 @@ use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 use std::str::FromStr;
 use tokio_postgres::NoTls;
 
-#[derive(Clone)]
-pub struct AppState {
-    pub conn: Pool,
-}
-
 pub async fn connection() -> Pool {
     let db_url = dotenvy::var("DB_URL").unwrap_or_else(|_| panic!("lost DB_URL"));
     let mut pg_config = tokio_postgres::Config::from_str(&db_url).unwrap();
