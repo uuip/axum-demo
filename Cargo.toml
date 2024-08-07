@@ -8,20 +8,20 @@ edition = "2021"
 [dependencies]
 axum = { version = "0.7.5"}
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
-tokio = { version = "1.36.0", features = ["full"] }
+tokio = { version = "1.39.2", features = ["full"] }
 tower-http = { version = "0.5.2", features = ["cors"] }
 jsonwebtoken = "9.3.0"
-validator = { version = "0.17.0", features = ["derive"] }
+validator = { version = "0.18.1", features = ["derive"] }
 
-sea-orm = { version = "0.12.15", features = ["sqlx-postgres", "runtime-tokio-native-tls", "macros"] }
-serde_json = "1.0.115"
-serde = { version = "1.0.197", features = ["derive"] }
+sea-orm = { version = "1.0.0", features = ["sqlx-postgres", "runtime-tokio-native-tls", "macros"] }
+serde_json = "1.0.122"
+serde = { version = "1.0.204", features = ["derive"] }
 serde_urlencoded = "0.7.1"
 
 dotenvy = "0.15.7"
-anyhow = "1.0.81"
-thiserror = "1.0.58"
-chrono = { version = "0.4.35", default-features = false, features = [
+anyhow = "1.0.86"
+thiserror = "1.0.63"
+chrono = { version = "0.4.38", default-features = false, features = [
     "clock",
     "serde",
 ] }
