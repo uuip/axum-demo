@@ -31,6 +31,8 @@ chrono = { version = "0.4.38", default-features = false, features = [
 lto = true
 strip = true
 codegen-units = 1
+panic = "abort"
+opt-level = 3
 
 [lints.rust]
 unused_variables = "allow"
