@@ -1,5 +1,5 @@
-use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use anyhow::Result;
+use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 
 #[derive(Clone)]
 pub struct AppState {

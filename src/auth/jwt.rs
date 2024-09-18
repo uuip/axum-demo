@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::common::ApiError;
 
-const JWT_SECRET: &str = "aaabbb";
+const JWT_SECRET: &[u8] = b"aaabbb";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claims {
@@ -52,7 +52,7 @@ pub fn sign(id: i64) -> Result<String, ApiError> {
     jsonwebtoken::encode(
         &Header::default(),
         &Claims::new(id),
-        &EncodingKey::from_secret(JWT_SECRET.as_bytes()),
+        &EncodingKey::from_secret(JWT_SECRET),
     )
     .map_err(ApiError::JwtError)
 }
@@ -60,7 +60,7 @@ pub fn sign(id: i64) -> Result<String, ApiError> {
 pub fn verify(token: &str) -> Result<Claims, ApiError> {
     jsonwebtoken::decode(
         token,
-        &DecodingKey::from_secret(JWT_SECRET.as_bytes()),
+        &DecodingKey::from_secret(JWT_SECRET),
         &Validation::default(),
     )
     .map(|data| data.claims)
