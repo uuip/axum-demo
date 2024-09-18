@@ -15,11 +15,7 @@ pub mod datetime_serializer {
     where
         S: Serializer,
     {
-        let s = if let Some(date) = date {
-            format!("{}", date.format(FORMAT))
-        } else {
-            "".to_string()
-        };
+        let s = date.map_or_else(|| "".to_string(), |date| date.format(FORMAT).to_string());
         serializer.serialize_str(&s)
     }
 }

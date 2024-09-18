@@ -34,9 +34,8 @@ where
         let query = parts.uri.query().unwrap_or_default();
         let mut value =
             serde_urlencoded::from_str::<Self>(query).map_err(|_| ApiError::PageError)?;
-        if value.size.is_none() {
-            value.size = Some(10)
-        }
+
+        value.size.get_or_insert(10);
         value.validate()?;
         Ok(value)
     }
