@@ -8,5 +8,6 @@ pub async fn connection() -> Result<PgPool> {
         .max_connections(100)
         .min_connections(4)
         .connect(&dsn)
-        .await.map_err(Into::into)
+        .await
+        .map_err(Into::into)
 }
