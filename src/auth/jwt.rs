@@ -22,7 +22,7 @@ pub struct Claims {
 impl Claims {
     pub fn new(id: i64) -> Self {
         let iat = Utc::now();
-        let exp = iat + Duration::try_days(90).unwrap();
+        let exp = iat + Duration::days(90);
 
         Self {
             id,
