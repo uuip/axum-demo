@@ -17,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/auth/login", post(login))
         .nest("/tree", tree_route())
         .layer(CorsLayer::permissive())
-        .with_state(connection().await);
+        .with_state(connection().await?);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await?;
     axum::serve(listener, app).await?;
