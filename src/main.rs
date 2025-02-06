@@ -1,32 +1,25 @@
-use axum::{
-    routing::{get, post},
-    Router,
-};
-use sea_orm::Database;
+use axum::routing::post;
+use axum::Router;
 use tower_http::cors::CorsLayer;
 
-use api::{query_single_tree, query_some_tree, update_tree};
-use db::AppState;
+use crate::api::tree_route;
+use crate::auth::login;
+use crate::common::*;
 
-mod api;
-mod db;
+pub mod api;
+pub mod auth;
+pub mod common;
+pub mod models;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // dotenvy::dotenv()?;
-    let dsn = dotenvy::var("DATABASE_URL")?;
-    let conn = Database::connect(dsn).await?;
-    let state = AppState { conn };
-
     let app = Router::new()
-        .route("/tree/:id", get(query_single_tree))
-        .route("/tree/q", get(query_some_tree))
-        .route("/tree/update", post(update_tree))
+        .route("/auth/login", post(login))
+        .nest("/tree", tree_route())
         .layer(CorsLayer::permissive())
-        .with_state(state);
+        .with_state(connection().await?);
 
-    axum::Server::bind(&"0.0.0.0:8000".parse()?)
-        .serve(app.into_make_service())
-        .await?;
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await?;
+    axum::serve(listener, app).await?;
     Ok(())
 }
