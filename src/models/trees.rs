@@ -3,6 +3,8 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::common::datetime_serializer::serialize;
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Deserialize, Serialize)]
 #[sea_orm(table_name = "trees")]
 pub struct Model {
@@ -13,8 +15,10 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub desc: Option<String>,
     pub energy: Option<i32>,
-    pub create_at: Option<DateTime>,
-    pub update_at: Option<DateTime>,
+    #[serde(serialize_with = "serialize")]
+    pub created_at: Option<DateTimeLocal>,
+    #[serde(serialize_with = "serialize")]
+    pub updated_at: Option<DateTimeLocal>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
