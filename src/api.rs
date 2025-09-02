@@ -10,6 +10,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 
 use crate::auth::Claims;
+use crate::common::ApiError::DbError;
 use crate::common::*;
 use crate::models::prelude::*;
 
@@ -71,16 +72,19 @@ pub async fn update_one(
         .await?
         .ok_or(ApiError::NotFound)?;
     let mut obj: trees::ActiveModel = obj.into();
-    obj.energy = Set(Option::from(payload.energy.to_owned()));
+    obj.energy = Set(Option::from(payload.energy));
     let obj = obj.update(&state.conn).await?;
     Ok(Json(json!(obj)))
 }
 
-pub async fn update_tree(state: State<AppState>, payload: Json<Item>) -> StatusCode {
-    let _ = Trees::update_many()
+pub async fn update_tree(
+    state: State<AppState>,
+    payload: Json<Item>,
+) -> Result<StatusCode, ApiError> {
+    let r = Trees::update_many()
         .col_expr(trees::Column::Energy, Expr::value(payload.energy))
         .filter(trees::Column::Id.eq(payload.id))
         .exec(&state.conn)
         .await;
-    StatusCode::OK
+    r.map(|_| StatusCode::OK).map_err(DbError)
 }
