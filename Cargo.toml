@@ -6,21 +6,21 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = { version = "0.8.4" }
-axum-extra = { version = "0.10.1", features = ["typed-header"] }
+axum = { version = "0.8.6" }
+axum-extra = { version = "0.10.3", features = ["typed-header"] }
 tokio = { version = "1.47.1", features = ["full"] }
 tower-http = { version = "0.6.6", features = ["cors"] }
-jsonwebtoken = "9.3.1"
+jsonwebtoken = { version = "10.0.0" ,features = ["rust_crypto"]}
 validator = { version = "0.20.0", features = ["derive"] }
 
-sea-orm = { version = "1.1.16", features = ["sqlx-postgres", "runtime-tokio", "macros"] }
+sea-orm = { version = "1.1.17", features = ["sqlx-postgres", "runtime-tokio", "macros"] }
 serde_json = "1.0.145"
-serde = { version = "1.0.226", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 serde_urlencoded = "0.7.1"
 
 dotenvy = "0.15.7"
 anyhow = "1.0.100"
-thiserror = "2.0.16"
+thiserror = "2.0.17"
 chrono = { version = "0.4.42", default-features = false, features = ["clock", "serde"] }
 
 [profile.release]

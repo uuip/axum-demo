@@ -12,7 +12,7 @@ use crate::common::ApiError;
 
 const JWT_SECRET: &[u8] = b"aaabbb";
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Claims {
     pub id: i64,
     pub exp: i64,
