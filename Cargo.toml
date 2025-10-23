@@ -6,22 +6,22 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = { version = "0.8.6" }
-axum-extra = { version = "0.10.3", features = ["typed-header"] }
-tokio = { version = "1.47.1", features = ["full"] }
-tower-http = { version = "0.6.6", features = ["cors"] }
-jsonwebtoken = { version = "10.0.0" ,features = ["rust_crypto"]}
-validator = { version = "0.20.0", features = ["derive"] }
+axum = { version = "0.8.9" }
+axum-extra = { version = "0.12.6", features = ["typed-header"] }
+tokio = { version = "1.53.1", features = ["full"] }
+tower-http = { version = "0.7.0", features = ["cors"] }
+jsonwebtoken = { version = "11.0.0" ,features = ["rust_crypto"]}
+validator = { version = "0.21.0", features = ["derive"] }
 
-sea-orm = { version = "1.1.17", features = ["sqlx-postgres", "runtime-tokio", "macros"] }
-serde_json = "1.0.145"
-serde = { version = "1.0.228", features = ["derive"] }
+sea-orm = { version = "2.0.1", features = ["sqlx-postgres", "runtime-tokio", "macros"] }
+serde_json = "1.0.151"
+serde = { version = "1.0.229", features = ["derive"] }
 serde_urlencoded = "0.7.1"
 
 dotenvy = "0.15.7"
-anyhow = "1.0.100"
-thiserror = "2.0.17"
-chrono = { version = "0.4.42", default-features = false, features = ["clock", "serde"] }
+anyhow = "1.0.104"
+thiserror = "2.0.20"
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "serde"] }
 
 [profile.release]
 lto = true
