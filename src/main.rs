@@ -11,6 +11,9 @@ pub mod auth;
 pub mod common;
 pub mod models;
 
+#[cfg(test)]
+mod tests;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let app = Router::new()

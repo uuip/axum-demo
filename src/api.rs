@@ -4,7 +4,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use sqlx::{PgPool, Postgres};
+use sqlx::PgPool;
 
 use crate::auth::Claims;
 use crate::common::*;
@@ -29,12 +29,12 @@ pub async fn test_token(
 pub async fn query_single_tree(
     State(pool): State<PgPool>,
     Path(id): Path<i32>,
-) -> Result<Json<Value>, ApiError> {
-    let obj = sqlx::query_as::<Postgres, Trees>("select * from trees where id=$1")
+) -> Result<Json<Trees>, ApiError> {
+    let obj = sqlx::query_as("select * from trees where id=$1")
         .bind(id)
         .fetch_one(&pool)
         .await?;
-    Ok(Json(json!(obj)))
+    Ok(Json(obj))
 }
 
 #[derive(Deserialize)]
@@ -46,20 +46,19 @@ pub async fn query_some_tree(
     State(pool): State<PgPool>,
     pagination: Pagination,
     params: Query<SomeTrees>,
-) -> Result<Json<Value>, ApiError> {
+) -> Result<Json<Vec<Trees>>, ApiError> {
     let page = pagination.page;
     let page_size = pagination.size.unwrap();
     let offset = (page - 1) * page_size;
 
-    let objs = sqlx::query_as::<Postgres, Trees>(
-        "select * from trees where energy>=$1 order by id desc limit $2 offset $3",
-    )
-    .bind(params.energy)
-    .bind(page_size)
-    .bind(offset)
-    .fetch_all(&pool)
-    .await?;
-    Ok(Json(json!(objs)))
+    let objs =
+        sqlx::query_as("select * from trees where energy>=$1 order by id desc limit $2 offset $3")
+            .bind(params.energy)
+            .bind(page_size)
+            .bind(offset)
+            .fetch_all(&pool)
+            .await?;
+    Ok(Json(objs))
 }
 
 #[derive(Deserialize)]
