@@ -30,13 +30,13 @@ pub async fn test_token(
 pub async fn query_single_tree(
     State(pool): State<Pool>,
     Path(id): Path<i32>,
-) -> Result<Json<Value>, ApiError> {
+) -> Result<Json<Trees>, ApiError> {
     let client = pool.get().await?;
     let row = client
         .query_one("select * from trees where id=$1", &[&id])
         .await?;
     let obj = Trees::from_row(&row);
-    Ok(Json(json!(obj)))
+    Ok(Json(obj))
 }
 
 #[derive(Deserialize)]
@@ -48,7 +48,7 @@ pub async fn query_some_tree(
     State(pool): State<Pool>,
     pagination: Pagination,
     params: Query<SomeTrees>,
-) -> Result<Json<Value>, ApiError> {
+) -> Result<Json<Vec<Trees>>, ApiError> {
     let page = pagination.page;
     let page_size = pagination.size.unwrap();
     let offset = (page - 1) * page_size;
@@ -63,7 +63,7 @@ pub async fn query_some_tree(
         .iter()
         .map(Trees::from_row)
         .collect::<Vec<Trees>>();
-    Ok(Json(json!(objs)))
+    Ok(Json(objs))
 }
 
 #[derive(Deserialize)]
