@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use crate::common::datetime_serializer::serialize;
+use crate::common::datetime_serializer;
 
 #[derive(Clone, Debug, Deserialize, Serialize, FromRow)]
 pub struct Trees {
@@ -11,9 +11,9 @@ pub struct Trees {
     pub name: Option<String>,
     pub desc: Option<String>,
     pub energy: Option<i32>,
-    #[serde(serialize_with = "serialize")]
+    #[serde(serialize_with = "datetime_serializer::serialize")]
     pub created_at: Option<DateTime<Utc>>,
-    #[serde(serialize_with = "serialize")]
+    #[serde(serialize_with = "datetime_serializer::serialize")]
     pub updated_at: Option<DateTime<Utc>>,
 }
 

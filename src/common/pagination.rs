@@ -9,14 +9,20 @@ use super::error::ApiError;
 pub struct Pagination {
     #[validate(range(min = 1))]
     pub page: i64,
+    #[serde(default = "default_page_size")]
     #[validate(range(min = 1))]
-    pub size: Option<i64>,
+    pub size: i64,
 }
+
+fn default_page_size() -> i64 {
+    10
+}
+
 impl Default for Pagination {
     fn default() -> Self {
         Self {
             page: 1,
-            size: Some(10),
+            size: default_page_size(),
         }
     }
 }
@@ -29,10 +35,8 @@ where
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let query = parts.uri.query().unwrap_or_default();
-        let mut value =
-            serde_urlencoded::from_str::<Self>(query).map_err(|_| ApiError::PageError)?;
+        let value = serde_urlencoded::from_str::<Self>(query).map_err(|_| ApiError::PageError)?;
 
-        value.size.get_or_insert(10);
         value.validate()?;
         Ok(value)
     }

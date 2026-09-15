@@ -27,6 +27,3 @@ chrono = { version = "0.4.45", default-features = false, features = ["clock", "s
 [profile.release]
 lto = true
 strip = true
-
-[lints.rust]
-unused_variables = "allow"
