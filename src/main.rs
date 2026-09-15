@@ -4,7 +4,7 @@ use tower_http::cors::CorsLayer;
 
 use crate::api::tree_route;
 use crate::auth::login;
-use crate::common::*;
+use crate::common::connection;
 
 pub mod api;
 pub mod auth;

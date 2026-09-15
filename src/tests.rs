@@ -9,9 +9,60 @@ use crate::auth::{login, Claims};
 use crate::common::{ApiError, Pagination};
 use crate::models::trees::Model as Trees;
 
+#[test]
+fn tree_routes_build_with_current_axum() {
+    let _app = axum::Router::new().nest("/tree", crate::api::tree_route());
+}
+
+#[tokio::test]
+async fn pagination_overflow_is_rejected_before_accessing_database() {
+    let mut options = sea_orm::ConnectOptions::new("postgres://localhost/unused");
+    options.connect_lazy(true).min_connections(0);
+    let conn = sea_orm::Database::connect(options).await.unwrap();
+    conn.close_by_ref().await.unwrap();
+
+    for (page, size, overflows) in [
+        (u64::MAX, 10, true),
+        (3, u64::MAX, true),
+        (1, 10, false),
+        (2, 3, false),
+        (2, i64::MAX as u64, false),
+    ] {
+        let pagination = serde_json::from_value(json!({"page": page, "size": size})).unwrap();
+        let params = serde_json::from_value(json!({"energy": 5})).unwrap();
+        let result = crate::api::query_some_tree(
+            axum::extract::State(conn.clone()),
+            pagination,
+            axum::extract::Query(params),
+        )
+        .await;
+        if overflows {
+            assert!(
+                matches!(result, Err(ApiError::PageError)),
+                "{page}, {size}: {result:?}"
+            );
+        } else {
+            assert!(
+                matches!(result, Err(ApiError::DbError(_))),
+                "{page}, {size}: {result:?}"
+            );
+        }
+    }
+}
+
 #[tokio::test]
 async fn pagination_preserves_validation_and_defaults() {
-    for query in ["", "page=0", "page=abc", "page=1&size=0", "page=1&size=abc"] {
+    for query in [
+        "",
+        "page=0",
+        "page=-1",
+        "page=abc",
+        "page=1&size=0",
+        "page=1&size=-1",
+        "page=1&size=abc",
+        "page=1&size=",
+        "page=1&size=18446744073709551616",
+    ] {
         let (mut parts, _) = Request::builder()
             .uri(format!("/tree/q?{query}"))
             .body(())
@@ -30,7 +81,7 @@ async fn pagination_preserves_validation_and_defaults() {
         let pagination = Pagination::from_request_parts(&mut parts, &())
             .await
             .unwrap();
-        assert_eq!((pagination.page, pagination.size), (page, Some(size)));
+        assert_eq!((pagination.page, pagination.size), (page, size));
     }
 }
 
@@ -82,6 +133,22 @@ async fn tree_json_preserves_fields_and_null_datetime_format() {
         let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
         assert_eq!(serde_json::from_slice::<Value>(&body).unwrap(), expected);
     }
+}
+
+#[test]
+fn tree_json_formats_local_datetimes() {
+    use chrono::{Local, TimeZone};
+
+    let date = Local.with_ymd_and_hms(2024, 1, 2, 3, 4, 5).unwrap();
+    let tree: Trees = serde_json::from_value(json!({
+        "id": 7,
+        "created_at": date.to_rfc3339(),
+        "updated_at": date.to_rfc3339(),
+    }))
+    .unwrap();
+    let value = serde_json::to_value(tree).unwrap();
+    assert_eq!(value["created_at"], "2024-01-02 03:04:05");
+    assert_eq!(value["updated_at"], "2024-01-02 03:04:05");
 }
 
 #[tokio::test]
