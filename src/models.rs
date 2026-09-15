@@ -1,4 +1,4 @@
-use crate::common::datetime_serializer::serialize;
+use crate::common::datetime_serializer;
 use chrono::{DateTime, Local};
 use postgres_from_row::FromRow;
 use serde::{Deserialize, Serialize};
@@ -10,9 +10,9 @@ pub struct Trees {
     pub name: Option<String>,
     pub desc: Option<String>,
     pub energy: Option<i32>,
-    #[serde(serialize_with = "serialize")]
+    #[serde(serialize_with = "datetime_serializer::serialize")]
     pub created_at: Option<DateTime<Local>>,
-    #[serde(serialize_with = "serialize")]
+    #[serde(serialize_with = "datetime_serializer::serialize")]
     pub updated_at: Option<DateTime<Local>>,
 }
 

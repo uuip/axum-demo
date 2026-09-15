@@ -1,15 +1,19 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
-use std::str::FromStr;
 use tokio_postgres::NoTls;
 
 pub fn connection() -> Result<Pool> {
-    let db_url = dotenvy::var("DB_URL").expect("lost DB_URL");
-    let mut pg_config = tokio_postgres::Config::from_str(&db_url)?;
+    let db_url = dotenvy::var("DB_URL").context("failed to read DB_URL")?;
+    let mut pg_config = db_url
+        .parse::<tokio_postgres::Config>()
+        .context("invalid DB_URL")?;
     pg_config.options("-c LC_MESSAGES=en_US.UTF-8");
-    let mgr_config = ManagerConfig {
+    let manager_config = ManagerConfig {
         recycling_method: RecyclingMethod::Fast,
     };
-    let mgr = Manager::from_config(pg_config, NoTls, mgr_config);
-    Pool::builder(mgr).max_size(100).build().map_err(Into::into)
+    let manager = Manager::from_config(pg_config, NoTls, manager_config);
+    Pool::builder(manager)
+        .max_size(100)
+        .build()
+        .map_err(Into::into)
 }

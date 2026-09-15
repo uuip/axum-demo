@@ -1,5 +1,4 @@
 use axum::extract::{Path, Query, State};
-use axum::response::Result;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use deadpool_postgres::Pool;
@@ -8,23 +7,22 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 
 use crate::auth::Claims;
-use crate::common::*;
+use crate::common::{ApiError, Pagination};
 use crate::models::Trees;
 
 pub fn tree_route() -> Router<Pool> {
     Router::new()
-        .route("/:id", get(query_single_tree))
+        .route("/{id}", get(query_single_tree))
         .route("/q", get(query_some_tree))
         .route("/update", post(update_tree))
 }
 
 pub async fn test_token(
-    State(pool): State<Pool>,
+    State(_pool): State<Pool>,
     user: Claims,
-    Json(payload): Json<Item>,
+    Json(_payload): Json<Item>,
 ) -> Result<Json<Value>, ApiError> {
-    let user_id = user.id;
-    Ok(Json(json!({ "user": user_id })))
+    Ok(Json(json!({ "user": user.id })))
 }
 
 pub async fn query_single_tree(
@@ -35,8 +33,7 @@ pub async fn query_single_tree(
     let row = client
         .query_one("select * from trees where id=$1", &[&id])
         .await?;
-    let obj = Trees::from_row(&row);
-    Ok(Json(obj))
+    Ok(Json(Trees::try_from_row(&row)?))
 }
 
 #[derive(Deserialize)]
@@ -47,23 +44,24 @@ pub struct SomeTrees {
 pub async fn query_some_tree(
     State(pool): State<Pool>,
     pagination: Pagination,
-    params: Query<SomeTrees>,
+    Query(params): Query<SomeTrees>,
 ) -> Result<Json<Vec<Trees>>, ApiError> {
-    let page = pagination.page;
-    let page_size = pagination.size.unwrap();
-    let offset = (page - 1) * page_size;
+    let page_size = pagination.size;
+    let offset = (pagination.page - 1)
+        .checked_mul(page_size)
+        .ok_or(ApiError::PageError)?;
     let client = pool.get().await?;
 
-    let objs = client
+    let trees = client
         .query(
             "select * from trees where energy>=$1 order by id desc limit $2 offset $3",
             &[&params.energy, &page_size, &offset],
         )
         .await?
         .iter()
-        .map(Trees::from_row)
-        .collect::<Vec<Trees>>();
-    Ok(Json(objs))
+        .map(Trees::try_from_row)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(Json(trees))
 }
 
 #[derive(Deserialize)]
@@ -74,14 +72,16 @@ pub struct Item {
 
 pub async fn update_tree(
     State(pool): State<Pool>,
-    payload: Json<Item>,
+    Json(payload): Json<Item>,
 ) -> Result<Json<Value>, ApiError> {
     let client = pool.get().await?;
-    let rst = client
+    let rows_affected = client
         .execute(
             "UPDATE trees SET energy=$1 WHERE id=$2",
             &[&payload.energy, &payload.id],
         )
         .await?;
-    Ok(Json(json!({"id":payload.id, "rows_affected": rst })))
+    Ok(Json(
+        json!({ "id": payload.id, "rows_affected": rows_affected }),
+    ))
 }
